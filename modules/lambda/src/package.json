@@ -1,0 +1,11 @@
+{
+  "name": "watermark-lambda",
+  "version": "1.0.0",
+  "private": true,
+  "description": "SQS-triggered worker. Reads originals/<portfolio>/<file> from S3, bakes a red diagonal 'WATERMARK' label into the pixels, writes the result to watermarked/<…> and a smaller thumbnails/<…>, and marks the photo row as ready.",
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.740.0",
+    "jimp": "^0.22.12",
+    "pg": "^8.13.1"
+  }
+}
