@@ -1,0 +1,48 @@
+name: INFRA CI
+
+# Lints and validates the Terraform sources without contacting any AWS account.
+# Runs on every push and PR. No secrets required: `terraform validate` only
+# checks syntax + variable wiring; provider initialization happens against a
+# local in-memory backend (`-backend=false`) so no real AWS calls are made.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  terraform:
+    name: terraform fmt + validate
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: environments/prod
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.9.8
+          terraform_wrapper: false
+
+      # Format check from the REPO ROOT so it covers every .tf file in
+      # environments/ + modules/ in one pass. -recursive walks the tree.
+      - name: terraform fmt -check
+        working-directory: ${{ github.workspace }}
+        run: terraform fmt -check -recursive
+
+      # Validate runs from environments/prod so module references resolve.
+      # -backend=false skips any remote state init; no provider plugins
+      # need real credentials to validate config syntax.
+      - name: terraform init (no backend)
+        run: terraform init -backend=false -input=false
+
+      - name: terraform validate
+        run: terraform validate -no-color
