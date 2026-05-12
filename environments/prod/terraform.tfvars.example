@@ -1,0 +1,16 @@
+# Copy to terraform.tfvars
+# AWS Credentials read from system
+# S3 Buckets names originals_bucket_name and frontend_bucket_name defined in script
+
+database_url = "postgresql://neondb_owner:CHANGE_ME@ep-xxx.aws.neon.tech/neondb?sslmode=require"
+
+default_photo_unit_price_usd = 12
+
+notification_email = "ops@example.com"
+
+# api_lambda_bundle_file = "../../../API/.lambda-build/index.js"
+
+stripe_secret_key = "sk_test_..."
+
+# Created from stripe with http_api_endpoint
+# stripe_webhook_secret = "whsec_..."
