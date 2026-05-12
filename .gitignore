@@ -1,0 +1,27 @@
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.backup
+terraform.tfvars
+crash.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# Entorno
+.env
+
+# Lambda (artefactos locales)
+modules/lambda/lambda-watermark.zip
+
+# Local cache of bucket names created out of band by create.sh
+environments/*/.bucket-names
+# AWS account ID of the previous create.sh run (used by lab-reset detector)
+environments/*/.last-account
+modules/lambda/src/node_modules/
+modules/api_http/build/
+
+# OS
+.DS_Store
+Thumbs.db
