@@ -96,6 +96,70 @@ resource "aws_cloudwatch_metric_alarm" "watermark_dlq_depth" {
   ok_actions    = compact([var.alarm_topic_arn])
 }
 
+# --- Métricas custom (Embedded Metric Format desde Lambdas) + alarmas SNS ---
+
+resource "aws_cloudwatch_metric_alarm" "emf_api_request_volume" {
+  alarm_name          = "${var.project_name}-${var.environment}-emf-api-requests"
+  alarm_description   = "Métrica EMF ApiRequestCount: tráfico HTTP total visto por la Lambda API (umbral bajo para pruebas con pocas peticiones)."
+  namespace           = "Lumiere/App"
+  metric_name         = "ApiRequestCount"
+  comparison_operator = "GreaterThanOrEqualToThreshold"
+  evaluation_periods  = 1
+  period              = 60
+  statistic           = "Sum"
+  threshold           = 5
+  treat_missing_data  = "notBreaching"
+
+  dimensions = {
+    Service = "api"
+  }
+
+  alarm_actions = compact([var.alarm_topic_arn])
+  ok_actions    = compact([var.alarm_topic_arn])
+}
+
+resource "aws_cloudwatch_metric_alarm" "emf_health_checks" {
+  alarm_name          = "${var.project_name}-${var.environment}-emf-health"
+  alarm_description   = "Métrica EMF HealthCheckCount: sondeos GET /health (JMeter o monitor externo)."
+  namespace           = "Lumiere/App"
+  metric_name         = "HealthCheckCount"
+  comparison_operator = "GreaterThanOrEqualToThreshold"
+  evaluation_periods  = 1
+  period              = 60
+  statistic           = "Sum"
+  threshold           = 3
+  treat_missing_data  = "notBreaching"
+
+  dimensions = {
+    Service  = "api"
+    Endpoint = "health"
+  }
+
+  alarm_actions = compact([var.alarm_topic_arn])
+  ok_actions    = compact([var.alarm_topic_arn])
+}
+
+resource "aws_cloudwatch_metric_alarm" "emf_stripe_webhook_ingress" {
+  alarm_name          = "${var.project_name}-${var.environment}-emf-stripe-webhook"
+  alarm_description   = "Métrica EMF StripeWebhookIngressCount: entradas a POST /webhooks/stripe (incluye firmas inválidas de prueba)."
+  namespace           = "Lumiere/App"
+  metric_name         = "StripeWebhookIngressCount"
+  comparison_operator = "GreaterThanOrEqualToThreshold"
+  evaluation_periods  = 1
+  period              = 300
+  statistic           = "Sum"
+  threshold           = 1
+  treat_missing_data  = "notBreaching"
+
+  dimensions = {
+    Service  = "api"
+    Endpoint = "stripe-webhook"
+  }
+
+  alarm_actions = compact([var.alarm_topic_arn])
+  ok_actions    = compact([var.alarm_topic_arn])
+}
+
 # --- Dashboard --------------------------------------------------------------
 # Note: RDS-specific metrics (CPU, connections) used to live here. They were
 # removed when the database moved off RDS to Neon, which exposes its own
@@ -160,6 +224,26 @@ resource "aws_cloudwatch_dashboard" "main" {
           metrics = [
             ["AWS/SQS", "ApproximateNumberOfMessagesVisible", "QueueName", var.watermark_queue_name],
             [".", "ApproximateNumberOfMessagesVisible", "QueueName", var.watermark_dlq_name]
+          ]
+        }
+      },
+      {
+        type   = "metric"
+        x      = 0
+        y      = 12
+        width  = 24
+        height = 6
+        properties = {
+          title  = "Lumiere/App — métricas EMF (instrumentación aplicación)"
+          region = data.aws_region.current.name
+          view   = "timeSeries"
+          stat   = "Sum"
+          period = 60
+          metrics = [
+            ["Lumiere/App", "ApiRequestCount", "Service", "api"],
+            ["Lumiere/App", "HealthCheckCount", "Service", "api", "Endpoint", "health"],
+            ["Lumiere/App", "StripeWebhookIngressCount", "Service", "api", "Endpoint", "stripe-webhook"],
+            ["Lumiere/App", "WatermarkSuccessCount", "Service", "watermark"]
           ]
         }
       }

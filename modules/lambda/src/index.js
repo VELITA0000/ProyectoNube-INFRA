@@ -20,6 +20,7 @@
 const { S3Client, GetObjectCommand, PutObjectCommand } = require("@aws-sdk/client-s3");
 const { Client } = require("pg");
 const Jimp = require("jimp");
+const { emitEmfCount } = require("./metrics");
 
 const s3 = new S3Client({});
 
@@ -218,6 +219,11 @@ exports.handler = async (event) => {
         const { wmKey, thKey } = await processOne(bucket, srcBucket, key);
         await markPhotoReady(db, photoId, wmKey, thKey);
         console.log("watermark done", { key, photoId });
+        try {
+          emitEmfCount({ WatermarkSuccessCount: 1 }, { Service: "watermark" });
+        } catch {
+          /* no afectar el flujo principal */
+        }
       } catch (err) {
         console.error("watermark pipeline error", { key, photoId, err });
         await markPhotoFailed(db, photoId);
